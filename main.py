@@ -1,16 +1,19 @@
 ##
 # @author Lukáš Plevač <xpleva07@vutbr.cz>
 # @date 12.5.2023
-# 
+# Semestral project to BIF on BUT FIT
+# Create ancestrals amino acides seqvences for Phylogenetic tree
+#
 
 from Bio import Phylo
 from Bio import AlignIO
 import pandas as pd
 
-DEBUG           = True
+DEBUG           = False
 TREE_FILE       = "tree.tre"
 MSA_FILE        = "msa.fasta"
 ANCESTRALS_FILE = "ancestrals.csv"
+OUT_DIR         = "output"
 
 ##
 ## FILE LOAD PART
@@ -30,10 +33,6 @@ ancestrals = pd.read_csv(ANCESTRALS_FILE, sep = ",")
 FastaAlignDict = {}
 for fasta in FastaAlign:
     FastaAlignDict[fasta.id] = fasta
-
-##
-## ALGORITM PART
-##
 
 ##
 ## Check if tree file coresponding with ancestrals
@@ -63,6 +62,7 @@ if a_nodes != t_nodes:
 
 ##
 ## Create acentral seqvence without spaces
+## using posterior probability form csv file
 ##
 
 seq = {}
@@ -80,9 +80,14 @@ for node in a_nodes:
         seq[node][row['position'] - 1] = amino.idxmax(axis=0)
 
 ##
-## Space place by leaves
+## Space placement part
 ##
 
+##
+# Get all leaves nodes for clade and distance to it
+#
+# @param clade clade to find all leafs nodes
+# @return array of dict of leaf clade and total_branch_len from param clade
 def getLeaves(clade):
     opend  = [{'clade': clade, 'total_len': 0}]
     closed = []
@@ -98,6 +103,7 @@ def getLeaves(clade):
     return closed
 
 ## Naive space place by leaves but not length
+## commented not used
 '''
 for clade in PhyloTree.find_clades():
     if clade.confidence is not None:
@@ -117,7 +123,6 @@ for clade in PhyloTree.find_clades():
 '''
 
 ## space placement by leaves and count with length of branches
-
 for clade in PhyloTree.find_clades():
     if clade.confidence is not None:
         leaves      = getLeaves(clade)
@@ -142,7 +147,7 @@ for clade in PhyloTree.find_clades():
 ## Save seq to files
 ##
 
-# fisrt convert seq dict to string
+# first convert seq dict to string
 for name, sq in seq.items():
     str_seq = ['-'] * len(sq)
     
@@ -155,4 +160,7 @@ for name, sq in seq.items():
         print("{}: {}".format(name, seq[name]))
 
 # save to files
-
+for name in seq.keys():
+    text_file = open("{}/node_{}.fas".format(OUT_DIR, name), "wt")
+    text_file.write(seq[name])
+    text_file.close()
